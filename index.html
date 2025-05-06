@@ -1,139 +1,169 @@
-/* Projeto AutoAds com login e cadastro completo */
+<!DOCTYPE html>
+<html lang="pt-BR">
 
-// 1. schema.prisma
-// -------------------
-// Salve como prisma/schema.prisma
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoAds - Plataforma Autônoma de Tráfego Pago</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
 
-generator client {
-  provider = "prisma-client-js"
-}
+    body {
+      background-color: #f4f4f4;
+      padding: 20px;
+      color: #333;
+    }
 
-datasource db {
-  provider = "sqlite" // ou "postgresql"
-  url      = "file:./dev.db"
-}
+    header {
+      background-color: #2c3e50;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      border-radius: 10px;
+    }
 
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String?
-  createdAt DateTime @default(now())
-}
+    main {
+      margin-top: 20px;
+    }
 
-// Após salvar, rode:
-// npx prisma migrate dev --name init && npx prisma generate
+    .section {
+      background: white;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
 
+    h2 {
+      margin-bottom: 10px;
+      color: #2c3e50;
+    }
 
-// 2. Register page
-// -------------------
-// Salve como app/auth/register/page.tsx
+    input, select, button, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
 
-'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+    button {
+      background-color: #27ae60;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
 
-export default function Register() {
-  const router = useRouter()
-  const [form, setForm] = useState({ email: '', password: '' })
+    button:hover {
+      background-color: #219150;
+    }
+  </style>
+</head>
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    const res = await fetch('/api/register', {
-      method: 'POST',
-      body: JSON.stringify(form),
-    })
-    if (res.ok) router.push('/auth/login')
-  }
+<body>
+  <header>
+    <h1>AutoAds</h1>
+    <p>Plataforma Autônoma de Criação e Gerenciamento de Anúncios</p>
+  </header>
 
-  return (
-    <form onSubmit={handleSubmit} className="max-w-sm mx-auto mt-20 space-y-4">
-      <input className="w-full p-2" placeholder="Email" onChange={e => setForm({ ...form, email: e.target.value })} />
-      <input className="w-full p-2" type="password" placeholder="Senha" onChange={e => setForm({ ...form, password: e.target.value })} />
-      <button type="submit" className="w-full bg-blue-500 p-2 text-white rounded">Cadastrar</button>
-    </form>
-  )
-}
+  <main>
+    <!-- Módulo de Criação de Anúncio -->
+    <section class="section">
+      <h2>Criar Novo Anúncio</h2>
+      <input type="text" placeholder="Título do Anúncio" id="titulo">
+      <textarea placeholder="Descrição" id="descricao"></textarea>
+      <input type="url" placeholder="URL de destino" id="url">
+      <select id="publico">
+        <option value="geral">Público Geral</option>
+        <option value="tech">Interesse em Tecnologia</option>
+        <option value="fitness">Interesse em Fitness</option>
+        <option value="negocios">Negócios e Marketing</option>
+      </select>
+      <input type="number" placeholder="Orçamento em R$" id="orcamento">
+      <button onclick="criarAnuncio()">Criar Anúncio</button>
+    </section>
 
+    <!-- Módulo de Exibição de Anúncios -->
+    <section class="section">
+      <h2>Anúncios Ativos</h2>
+      <div id="anuncios"></div>
+    </section>
 
-// 3. Login page
-// -------------------
-// Salve como app/auth/login/page.tsx
+    <!-- Módulo de Relatórios -->
+    <section class="section">
+      <h2>Relatórios em Tempo Real</h2>
+      <p>Visualizações: <span id="visu">0</span></p>
+      <p>Cliques: <span id="cliques">0</span></p>
+      <p>CTR: <span id="ctr">0%</span></p>
+    </section>
+  </main>
 
-'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+  <script>
+    let anuncios = [];
+    let totalCliques = 0;
+    let totalVisu = 0;
 
-export default function Login() {
-  const router = useRouter()
-  const [form, setForm] = useState({ email: '', password: '' })
+    function criarAnuncio() {
+      const titulo = document.getElementById('titulo').value;
+      const descricao = document.getElementById('descricao').value;
+      const url = document.getElementById('url').value;
+      const publico = document.getElementById('publico').value;
+      const orcamento = parseFloat(document.getElementById('orcamento').value);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    const res = await fetch('/api/login', {
-      method: 'POST',
-      body: JSON.stringify(form),
-    })
-    if (res.ok) router.push('/dashboard')
-  }
+      if (!titulo || !descricao || !url || !orcamento) {
+        alert("Preencha todos os campos!");
+        return;
+      }
 
-  return (
-    <form onSubmit={handleSubmit} className="max-w-sm mx-auto mt-20 space-y-4">
-      <input className="w-full p-2" placeholder="Email" onChange={e => setForm({ ...form, email: e.target.value })} />
-      <input className="w-full p-2" type="password" placeholder="Senha" onChange={e => setForm({ ...form, password: e.target.value })} />
-      <button type="submit" className="w-full bg-green-500 p-2 text-white rounded">Entrar</button>
-    </form>
-  )
-}
+      const anuncio = { titulo, descricao, url, publico, orcamento, visualizacoes: 0, cliques: 0 };
+      anuncios.push(anuncio);
+      exibirAnuncios();
+    }
 
+    function exibirAnuncios() {
+      const container = document.getElementById('anuncios');
+      container.innerHTML = '';
+      anuncios.forEach((anuncio, i) => {
+        const div = document.createElement('div');
+        div.innerHTML = `
+          <h3>${anuncio.titulo}</h3>
+          <p>${anuncio.descricao}</p>
+          <a href="#" onclick="registrarClique(${i})">${anuncio.url}</a>
+          <p><strong>Segmento:</strong> ${anuncio.publico}</p>
+          <p><strong>Orçamento:</strong> R$${anuncio.orcamento}</p>
+          <p><strong>Visualizações:</strong> ${anuncio.visualizacoes} | <strong>Cliques:</strong> ${anuncio.cliques}</p>
+          <hr>
+        `;
+        container.appendChild(div);
+        anuncio.visualizacoes++;
+        totalVisu++;
+      });
+      atualizarRelatorio();
+    }
 
-// 4. API: register route
-// -------------------
-// Salve como app/api/register/route.ts
+    function registrarClique(index) {
+      anuncios[index].cliques++;
+      totalCliques++;
+      atualizarRelatorio();
+      alert("Clique registrado!");
+    }
 
-import { PrismaClient } from '@prisma/client'
-import bcrypt from 'bcryptjs'
+    function atualizarRelatorio() {
+      document.getElementById('cliques').innerText = totalCliques;
+      document.getElementById('visu').innerText = totalVisu;
+      const ctr = totalVisu > 0 ? ((totalCliques / totalVisu) * 100).toFixed(2) : 0;
+      document.getElementById('ctr').innerText = ctr + '%';
+    }
 
-const prisma = new PrismaClient()
+    // Simulação de atualizações em tempo real
+    setInterval(exibirAnuncios, 8000);
+  </script>
+</body>
 
-export async function POST(req: Request) {
-  const body = await req.json()
-  const hashed = await bcrypt.hash(body.password, 10)
-  const user = await prisma.user.create({
-    data: { email: body.email, password: hashed },
-  })
-  return new Response(JSON.stringify(user), { status: 201 })
-}
-
-
-// 5. API: login route
-// -------------------
-// Salve como app/api/login/route.ts
-
-import { PrismaClient } from '@prisma/client'
-import bcrypt from 'bcryptjs'
-
-const prisma = new PrismaClient()
-
-export async function POST(req: Request) {
-  const body = await req.json()
-  const user = await prisma.user.findUnique({ where: { email: body.email } })
-  if (!user || !(await bcrypt.compare(body.password, user.password))) {
-    return new Response('Credenciais inválidas', { status: 401 })
-  }
-  return new Response(JSON.stringify({ success: true }), { status: 200 })
-}
-
-
-// 6. Dashboard de exemplo
-// -------------------
-// Salve como app/dashboard/page.tsx
-
-export default function Dashboard() {
-  return (
-    <div className="max-w-3xl mx-auto mt-20 text-center">
-      <h1 className="text-3xl font-bold">Bem-vindo à AutoAds!</h1>
-      <p className="mt-4">Você está logado. Aqui será o painel da plataforma de tráfego automático.</p>
-    </div>
-  )
-}
+</html>
