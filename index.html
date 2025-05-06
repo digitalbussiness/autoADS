@@ -1,0 +1,139 @@
+/* Projeto AutoAds com login e cadastro completo */
+
+// 1. schema.prisma
+// -------------------
+// Salve como prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" // ou "postgresql"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+}
+
+// Após salvar, rode:
+// npx prisma migrate dev --name init && npx prisma generate
+
+
+// 2. Register page
+// -------------------
+// Salve como app/auth/register/page.tsx
+
+'use client'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+
+export default function Register() {
+  const router = useRouter()
+  const [form, setForm] = useState({ email: '', password: '' })
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const res = await fetch('/api/register', {
+      method: 'POST',
+      body: JSON.stringify(form),
+    })
+    if (res.ok) router.push('/auth/login')
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="max-w-sm mx-auto mt-20 space-y-4">
+      <input className="w-full p-2" placeholder="Email" onChange={e => setForm({ ...form, email: e.target.value })} />
+      <input className="w-full p-2" type="password" placeholder="Senha" onChange={e => setForm({ ...form, password: e.target.value })} />
+      <button type="submit" className="w-full bg-blue-500 p-2 text-white rounded">Cadastrar</button>
+    </form>
+  )
+}
+
+
+// 3. Login page
+// -------------------
+// Salve como app/auth/login/page.tsx
+
+'use client'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+
+export default function Login() {
+  const router = useRouter()
+  const [form, setForm] = useState({ email: '', password: '' })
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      body: JSON.stringify(form),
+    })
+    if (res.ok) router.push('/dashboard')
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="max-w-sm mx-auto mt-20 space-y-4">
+      <input className="w-full p-2" placeholder="Email" onChange={e => setForm({ ...form, email: e.target.value })} />
+      <input className="w-full p-2" type="password" placeholder="Senha" onChange={e => setForm({ ...form, password: e.target.value })} />
+      <button type="submit" className="w-full bg-green-500 p-2 text-white rounded">Entrar</button>
+    </form>
+  )
+}
+
+
+// 4. API: register route
+// -------------------
+// Salve como app/api/register/route.ts
+
+import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
+
+const prisma = new PrismaClient()
+
+export async function POST(req: Request) {
+  const body = await req.json()
+  const hashed = await bcrypt.hash(body.password, 10)
+  const user = await prisma.user.create({
+    data: { email: body.email, password: hashed },
+  })
+  return new Response(JSON.stringify(user), { status: 201 })
+}
+
+
+// 5. API: login route
+// -------------------
+// Salve como app/api/login/route.ts
+
+import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
+
+const prisma = new PrismaClient()
+
+export async function POST(req: Request) {
+  const body = await req.json()
+  const user = await prisma.user.findUnique({ where: { email: body.email } })
+  if (!user || !(await bcrypt.compare(body.password, user.password))) {
+    return new Response('Credenciais inválidas', { status: 401 })
+  }
+  return new Response(JSON.stringify({ success: true }), { status: 200 })
+}
+
+
+// 6. Dashboard de exemplo
+// -------------------
+// Salve como app/dashboard/page.tsx
+
+export default function Dashboard() {
+  return (
+    <div className="max-w-3xl mx-auto mt-20 text-center">
+      <h1 className="text-3xl font-bold">Bem-vindo à AutoAds!</h1>
+      <p className="mt-4">Você está logado. Aqui será o painel da plataforma de tráfego automático.</p>
+    </div>
+  )
+}
