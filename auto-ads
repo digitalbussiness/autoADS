@@ -1,0 +1,80 @@
+// Estrutura inicial do módulo de anúncios automáticos
+// Diretório: /src/modules/ads/autoAds.ts
+
+import { db } from "@/lib/db";
+import { v4 as uuidv4 } from "uuid";
+
+interface AdCampaign {
+  userId: string;
+  budget: number;
+  goal: "conversions" | "clicks" | "impressions";
+  target: {
+    interests: string[];
+    location?: string;
+    behaviorTags?: string[];
+  };
+  creatives: {
+    headline: string;
+    text: string;
+    imageUrl?: string;
+    cta: string;
+  }[];
+}
+
+export async function createAdCampaign(campaign: AdCampaign) {
+  const campaignId = uuidv4();
+
+  const created = await db.adCampaign.create({
+    data: {
+      id: campaignId,
+      userId: campaign.userId,
+      budget: campaign.budget,
+      goal: campaign.goal,
+      target: campaign.target,
+      creatives: campaign.creatives,
+      status: "pending",
+      createdAt: new Date(),
+    },
+  });
+
+  // Simulação de IA para auto-otimização inicial
+  optimizeAdCampaign(created.id);
+
+  return created;
+}
+
+export async function optimizeAdCampaign(campaignId: string) {
+  const campaign = await db.adCampaign.findUnique({ where: { id: campaignId } });
+  if (!campaign) return;
+
+  // Simulação: otimização baseada em metas
+  if (campaign.goal === "clicks") {
+    // Aplique lógica de priorização por CTR esperado
+    console.log(`Otimizando campanha ${campaignId} para mais cliques...`);
+  } else if (campaign.goal === "conversions") {
+    console.log(`Otimizando campanha ${campaignId} para conversões...`);
+  }
+
+  // Atualize o status para "ativo"
+  await db.adCampaign.update({
+    where: { id: campaignId },
+    data: { status: "active" },
+  });
+}
+
+// Rota API de exemplo: /api/ads/create
+// Recebe dados e dispara criação automática de campanha
+
+import { NextApiRequest, NextApiResponse } from "next";
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== "POST") return res.status(405).end();
+
+  try {
+    const result = await createAdCampaign(req.body);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Erro ao criar campanha:", error);
+    res.status(500).json({ error: "Erro interno" });
+  }
+}
